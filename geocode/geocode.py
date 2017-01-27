@@ -32,15 +32,13 @@ class Clientele:
 class Client:
 
     def __init__(self, info=None):
-
         if type(info) is dict:
             self._dict_to_client(info)
         else:
             # todo log error
             raise TypeError
 
-    def _dict_to_client(self, info=None):
-
+    def _dict_to_client(self, info):
         self.name = info['name']
         self.phone_number = info['phone_number']
         self.raw_address = Location(info)
@@ -48,8 +46,7 @@ class Client:
 
 class Location:
 
-    def __init__(self, info):
-
+    def __init__(self, info=None):
         if type(info) is dict:
             self._dict_to_address(info)
         else:
@@ -57,15 +54,14 @@ class Location:
             raise TypeError
 
     def _dict_to_address(self, info):
-
         self.address = info['address']
         self.city = info['city']
         self.state = info['state']
         self.zip = info['zip']
 
     def __str__(self):
-
         return self.address + ' ' + self.city + ', ' + self.state + ' ' + self.zip
+
 
 class GeocodeService:
 

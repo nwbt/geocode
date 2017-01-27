@@ -23,55 +23,49 @@ class ClientTest(unittest.TestCase):
     def setUpClass(cls):
         cls.name = 'store'
         cls.phone_number = '212-555-1212'
-        cls.address = '223 W 38th St'
-        cls.city = 'New York'
-        cls.state = 'NY'
-        cls.zip = '10018'
 
     @classmethod
     def tearDownClass(cls):
         pass
 
     def setUp(self):
-        self.empty_object = None
+        self.client_object = None
         self.exception = None
 
     def tearDown(self):
         pass
 
     def test_client_constructor_no_args(self):
-
         try:
-            self.empty_object = Client()
-        except TypeError as te:
-            self.exception = te
+            self.client_object = Client()
+        except Exception as e:
+            self.exception = e
 
         self.assertIsInstance(self.exception, TypeError, 'Nonexistent dict should have returned TypeError')
-        self.assertIsNone(self.empty_object, 'Exception, in constructor, should have prevented object creation')
+        self.assertIsNone(self.client_object, 'Exception, in constructor, should have prevented object creation')
 
     def test_client_constructor_invalid_dict(self):
-
-        empty_dict = {}
+        invalid_dict = {}
         try:
-            self.empty_object = Client(empty_dict)
-        except KeyError as ke:
-            self.exception = ke
+            self.client_object = Client(invalid_dict)
+        except Exception as e:
+            self.exception = e
 
         self.assertIsInstance(self.exception, KeyError, 'Invalid dict should have returned KeyError')
-        self.assertIsNone(self.empty_object, 'Exception, in constructor, should have prevented object creation')
+        self.assertIsNone(self.client_object, 'Exception, in constructor, should have prevented object creation')
 
     def test_client_constructor_with_valid_dict(self):
-
-        self.client_dict = {
+        client_dict = {
             'name': self.name, 'phone_number':self.phone_number, 'address':MagicMock(), 'city':MagicMock(),
             'state':MagicMock(), 'zip':MagicMock()
                             }
-        client = None
         try:
-            client = Client(self.client_dict)
+            self.client_object = Client(client_dict)
         except Exception as e:
-            pass
-        self.assertIsNotNone(client)
-        self.assertEqual(client.name, self.name, 'names are not the same')
-        self.assertEqual(client.phone_number, self.phone_number, 'phone_numbers are not equal')
+            self.exception = e
+
+        self.assertIsNone(self.exception, 'exception should not have occurred, ' + str(self.exception))
+        self.assertIsNotNone(self.client_object)
+        self.assertEqual(self.client_object.name, self.name, 'names are not the same')
+        self.assertEqual(self.client_object.phone_number, self.phone_number, 'phone_numbers are not equal')
 
