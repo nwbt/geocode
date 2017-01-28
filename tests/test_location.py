@@ -8,7 +8,6 @@
 
 from geocode.geocode import Location
 import unittest
-from unittest.mock import MagicMock
 
 
 def setUpModule():
