@@ -13,16 +13,18 @@ DEFAULT_LOG_LEVEL = 'WARNING'
 DEFAULT_LOG_FILE = 'logs/geocode.log'
 DEFAULT_LOG_MSG = '%(asctime)s|%(levelname)s|%(message)s'
 
+
 def main():
-    configureLogging()
+    configure_logging()
 
     parser = argparse.ArgumentParser()
     args = _build_argument_list(parser)
     cli = CommandLineInput(args)
 
-def configureLogging(level=None, filename=None):
-    log_file = _verifyLogFile(filename)
-    log_level = _verifyLogLevel(level)
+
+def configure_logging(level=None, filename=None):
+    log_file = _verify_log_file(filename)
+    log_level = _verify_log_level(level)
     logging.basicConfig(filename=log_file, level=log_level, format=DEFAULT_LOG_MSG)
 
 
@@ -43,43 +45,51 @@ def _build_argument_list(parser):
         # todo 1) figure out what type of error is returned and 2) log error
         pass
 
+
 class CommandLineInput:
 
     def __init__(self, namespace):
         # important to change any specifics with respect to logging first
-        self.log_level = _verifyLogLevel(namespace.log_level)
-        self.log_file = _verifyLogFile(namespace.log_file)
+        self.log_level = _verify_log_level(namespace.log_level)
+        self.log_file = _verify_log_file(namespace.log_file)
 
         if self.log_file != DEFAULT_LOG_FILE or self.log_level != DEFAULT_LOG_LEVEL:
-            configureLogging(level=self.log_level, filename=self.log_file)
+            configure_logging(level=self.log_level, filename=self.log_file)
 
-        self.input_file = _inputFile(namespace.input_file)
-        self.output_file = _outputFile(namespace.output_file)
-        self.api_key = _apiKey(namespace.api_key)
+        self.input_file = _input_file(namespace.input_file)
+        self.output_file = _output_file(namespace.output_file)
+        self.api_key = _api_key(namespace.api_key)
 
 
-def _inputFile(file):
+def _input_file(file):
     if not os.path.exists(file):
         raise FileNotFoundError
+    return file
 
-def _apiKey(key):
+
+def _api_key(key):
+    if type(key) is not str:
+        raise TypeError
     # todo verify key's success
     pass
 
-def _outputFile(file):
-    if not os.path.exists(file):
-        # todo create file
-        pass
 
-def _verifyLogLevel(level=None):
+def _output_file(file):
+    if not os.path.exists(file):
+        # todo create path if it does not exist
+        pass
+    return file
+
+
+def _verify_log_level(level=None):
     ''' verifies log level is correct and if it is not sends in a default value '''
     log_level = level
     acceptable_log_levels = {
-        'CRITICAL':logging.CRITICAL,
-        'DEBUG':logging.DEBUG,
-        'ERROR':logging.ERROR,
-        'INFO':logging.INFO,
-        'WARNING':logging.WARNING
+        'CRITICAL': logging.CRITICAL,
+        'DEBUG': logging.DEBUG,
+        'ERROR': logging.ERROR,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING
     }
     if not log_level or log_level.upper() not in acceptable_log_levels:
         log_level = DEFAULT_LOG_LEVEL
@@ -88,7 +98,8 @@ def _verifyLogLevel(level=None):
 
     return acceptable_log_levels[log_level]
 
-def _verifyLogFile(file=None):
+
+def _verify_log_file(file=None):
     ''' verifies if path to desired logfile exists before logging starts '''
     filename = file
 
@@ -99,6 +110,7 @@ def _verifyLogFile(file=None):
         os.makedirs(directory)
 
     return filename
+
 
 class LocationService:
 
