@@ -50,6 +50,7 @@ class CommandLineInputTest(unittest.TestCase):
         cls.emptyArgs = [
             os.path.abspath(geocode.__file__)
         ]
+
         cls.fullArgs = [
             os.path.abspath(geocode.__file__),
             '-i', 'in',
@@ -82,27 +83,56 @@ class CommandLineInputTest(unittest.TestCase):
     def test_log_file_no_args(self):
         sys.argv = self.emptyArgs
         args = geocode._build_argument_list(argparse.ArgumentParser())
-        self.assertEqual(geocode._verifyLogFile(args.log_file), geocode.DEFAULT_LOG_FILE,
+        self.assertEqual(geocode._verify_log_file(args.log_file), geocode.DEFAULT_LOG_FILE,
                                                 'log file does not match default value')
 
     def test_log_level_no_args(self):
         sys.argv = self.emptyArgs
         args = geocode._build_argument_list(argparse.ArgumentParser())
-        self.assertEqual(geocode._verifyLogLevel(args.log_level), logging.WARNING,
+        self.assertEqual(geocode._verify_log_level(args.log_level), logging.WARNING,
                                                 'log level does not match default value')
 
     def test_log_level_invalid_args(self):
         sys.argv = self.fullArgs
         args = geocode._build_argument_list(argparse.ArgumentParser())
-        self.assertEqual(geocode._verifyLogLevel(args.log_level), logging.WARNING,
+        self.assertEqual(geocode._verify_log_level(args.log_level), logging.WARNING,
                          'log level does not match default value')
 
     def test_log_level_valid_args(self):
         self.fullArgs[self.fullArgs.index('level')] = 'debug'
         sys.argv = self.fullArgs
         args = geocode._build_argument_list(argparse.ArgumentParser())
-        self.assertEqual(geocode._verifyLogLevel(args.log_level), logging.DEBUG,
+        self.assertEqual(geocode._verify_log_level(args.log_level), logging.DEBUG,
                          'log level does not match default value')
+
+    def test_input_file_does_not_exist(self):
+        self.assertFalse(True)
+
+    def test_input_file_does_exist(self):
+        self.assertFalse(True)
+
+    def test_api_key_wrong_type(self):
+        self.assertFalse(True)
+
+    def test_api_key_bad_key(self):
+        self.assertFalse(True)
+
+    def test_api_key_good(self):
+        self.assertFalse(True)
+
+    def test_output_file_exists(self):
+        self.assertFalse(True)
+
+    def test_output_file_path_exists_but_file_not(self):
+        self.assertFalse(True)
+
+    def test_output_file_path_exists_and_file(self):
+        self.assertFalse(True)
+
+    def test_output_file_path_not_exists(self):
+        self.assertFalse(True)
+
+
 
 
 

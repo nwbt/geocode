@@ -36,6 +36,7 @@ class ClientTest(unittest.TestCase):
         pass
 
     def test_client_constructor_no_args(self):
+        # todo split into multiple tests
         try:
             self.client_object = Client()
         except Exception as e:
@@ -45,6 +46,7 @@ class ClientTest(unittest.TestCase):
         self.assertIsNone(self.client_object, 'Exception, in constructor, should have prevented object creation')
 
     def test_client_constructor_invalid_dict(self):
+        # todo split into multiple tests
         invalid_dict = {}
         try:
             self.client_object = Client(invalid_dict)
@@ -55,6 +57,7 @@ class ClientTest(unittest.TestCase):
         self.assertIsNone(self.client_object, 'Exception, in constructor, should have prevented object creation')
 
     def test_client_constructor_with_valid_dict(self):
+        # todo split into multiple tests
         client_dict = {
             'name': self.name, 'phone_number':self.phone_number, 'address':MagicMock(), 'city':MagicMock(),
             'state':MagicMock(), 'zip':MagicMock()

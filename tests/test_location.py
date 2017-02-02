@@ -39,6 +39,7 @@ class LocationTest(unittest.TestCase):
         pass
 
     def test_location_constructor_no_args(self):
+        # todo split into multiple tests
         try:
             self.location_object = Location()
         except Exception as e:
@@ -48,6 +49,7 @@ class LocationTest(unittest.TestCase):
         self.assertIsNone(self.location_object, 'Exception, in contructor, should have prevented object creation')
 
     def test_location_constructor_invalid_dict(self):
+        # todo split into multiple tests
         invalid_dict = {}
         try:
             self.location_object = Location(invalid_dict)
@@ -58,6 +60,7 @@ class LocationTest(unittest.TestCase):
         self.assertIsNone(self.location_object, 'Exception, in constructor, should have prevented object creation')
 
     def test_location_constructor_with_valid_object(self):
+        # todo split into multiple tests
         location_dict = { 'address':self.address, 'city':self.city, 'state':self.state, 'zip':self.zip }
 
         try:
@@ -73,6 +76,7 @@ class LocationTest(unittest.TestCase):
         self.assertEqual(self.location_object.zip, self.zip, 'zip codes are not equal')
 
     def test_location_str_method(self):
+        # todo split into multiple tests
         location_dict = { 'address':self.address, 'city':self.city, 'state':self.state, 'zip':self.zip }
 
         try:
