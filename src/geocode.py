@@ -10,6 +10,7 @@ import logging
 import configparser
 import csv
 import collections
+import json
 from googlemaps import client as googleclient
 from googlemaps import geocoding as googlegeocode
 from googlemaps import exceptions
@@ -32,8 +33,12 @@ def main():
     gcs.client_connection()
     gcs.geocode_addresses()
 
-    clientele.create_geojson_from_geocoded_addresses()
+    write_json_to_file(app_settings.output_file, clientele._to_json())
 
+def write_json_to_file(output_file, json_as_str):
+
+    with open(output_file, 'w') as file:
+        json.dump(json_as_str, file)
 
 def parse_config_file():
     config = configparser.ConfigParser()
@@ -141,36 +146,48 @@ class Clientele:
     client_list = []
 
     def add_client(self, client_dict):
-
         try:
-            client = Client(client_dict)
+            client = Store(client_dict)
             self.client_list.append(client)
         except Exception as e:
             print(str(e))
             logging.error(e)
 
+    def _to_json(self):
+        clientele_json = []
+        for i in self.client_list:
+            clientele_json.append(i._to_json())
+        return clientele_json
 
-class Client:
-    location_address = None
-    location_response = None
-    location_json = None
-    name = None
+
+class Store():
+    address_components = None
+    google_address = None
+    geocode = None
+    store_name = None
     phone_number = None
 
     def __init__(self, client_dict=None):
-        if type(client_dict) is collections.OrderedDict:
+        if type(client_dict) is dict or type(client_dict) is collections.OrderedDict:
             self._dict_to_client(client_dict)
         elif client_dict is not None:
             # todo log error
             raise TypeError
 
     def _dict_to_client(self, client_dict):
-        self.name = client_dict['store_name']
+        self.store_name = client_dict['store_name']
         self.phone_number = client_dict['phone']
-        self.location_address = Location(client_dict)
+        self.address_components = Location(client_dict)
 
-    def _build_json_from_response(self):
-        pass
+    def _to_json(self):
+        return {
+            'store_name': self.store_name,
+            'phone_number': self.phone_number,
+            'address_components': self.address_components._to_json(),
+            'google_address': self.google_address,
+            'geocode': self.geocode
+                }
+
 
 class Location:
     address_1 = None
@@ -180,7 +197,7 @@ class Location:
     zip = None
 
     def __init__(self, info=None):
-        if type(info) is collections.OrderedDict:
+        if type(info) is dict or collections.OrderedDict:
             self._dict_to_address(info)
         elif info is not None:
             # todo log error
@@ -193,13 +210,17 @@ class Location:
         self.state = info['state']
         self.zip = info['zip']
 
+    def _to_json(self):
+        return {
+            'address_1': self.address_1,
+            'address_2': self.address_2,
+            'city': self.city,
+            'state': self.state,
+            'zip': self.zip
+        }
+
     def __str__(self):
         return self.address_1 + ' ' + self.address_2 + ' ' + self.city + ', ' + self.state + ' ' + self.zip
-
-
-class GeocodeService:
-    def __init__(self):
-        pass
 
 
 class GoogleGeocodeService:
@@ -208,17 +229,26 @@ class GoogleGeocodeService:
 
     def geocode_addresses(self):
         for idx, client in enumerate(self.clients):
-            client.location_geocode = self.geocode_address(client.location_address)
+            geocode_response = self.geocode_address(client.pre_full_address)
+            if len(geocode_response) == 1:
+                self._manage_response(client, geocode_response[0])
+            else:
+                # todo raise error and log
+                print('uh that shouldn\'t have happened' + client.pre_full_address)
 
-    def geocode_address(self, address):
+    def _manage_response(self, client, response):
+        # todo verify dict has values, log if not
+        client.google_address = response['formatted_address']
+        client.geocode = response['geometry']['location']
+
+    def geocode_address(self, pre_full_address):
         try:
-            value = googlegeocode.geocode(self.client, address=address)
+            value = googlegeocode.geocode(self.client, address=pre_full_address)
             return value
         except exceptions.ApiError as apie:
             logging.critical(apie)
             # todo may want to stop application on this type of error
             return None
-
 
     def client_connection(self):
         try:
@@ -226,6 +256,7 @@ class GoogleGeocodeService:
         except ValueError as ve:
             logging.critical(ve)
             print(ve)
+
 
 if __name__ == '__main__':
     main()
