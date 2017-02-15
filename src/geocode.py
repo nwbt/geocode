@@ -246,12 +246,14 @@ class Store():
 
     def __init__(self, client_dict=None):
         if type(client_dict) is collections.OrderedDict:
-            self._dict_to_client(client_dict)
-        elif client_dict is not None:
+            self._dict_to_store(client_dict)
+        elif client_dict is None:
+            self.address_from_csv = Address()
+        else:
             # todo log error
             raise TypeError
 
-    def _dict_to_client(self, client_dict):
+    def _dict_to_store(self, client_dict):
         self.store_name = client_dict['store_name']
         self.phone_number = client_dict['phone']
         self.address_from_csv = Address(client_dict)

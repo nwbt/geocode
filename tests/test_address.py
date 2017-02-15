@@ -160,3 +160,21 @@ class ClassAddressTest(unittest.TestCase):
         # assert
         self.assertEqual(actual_address_str, expected_address_str, 'address strings are not the same')
 
+    def test_to_dict_with_no_address(self):
+        # arrange
+        address = Address()
+        expected_address_dict = {
+            'street_address_1': None,
+            'street_address_2': None,
+            'city': None,
+            'state': None,
+            'zip': None,
+        }
+
+        # act
+        actual_address_dict = address.to_dict()
+
+        # assert
+        self.assertEqual(actual_address_dict, expected_address_dict, 'empty dicts not the same')
+
+
