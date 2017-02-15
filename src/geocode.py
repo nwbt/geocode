@@ -24,11 +24,8 @@ def main():
     app_settings = parse_config_file()
     clientele = build_clientele_from_csv_file(app_settings.input_file)
 
-    gcs = GoogleGeocodeService()
-    gcs.api_key = app_settings.api_key
-    gcs.clients = clientele.client_list
+    gcs = GoogleGeocodeService(app_settings.api_key, clientele.client_list)
 
-    gcs.client_connection()
     gcs.geocode_addresses()
 
     write_json_to_file(app_settings.output_file, clientele.to_list_of_dicts())
@@ -203,38 +200,54 @@ class Clientele:
 
 
 class GoogleGeocodeService:
-    clients = None
-    api_key = None
+
+    def __init__(self, api_key=None, client_list=None):
+        if api_key:
+            self.api_key = api_key
+        if client_list:
+            self.list_of_clients = client_list
+
+    @property
+    def client(self):
+        return self._client
+
+    @client.setter
+    def client(self, client):
+        if type(client) is googlemaps.client.Client:
+            self._client = client
+        else:
+            raise TypeError
+
+    @property
+    def api_key(self):
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, api_key):
+        self._api_key = api_key
+        self.client = googlemaps.client.Client(key=api_key)
 
     def geocode_addresses(self):
-        for idx, client in enumerate(self.clients):
+        for idx, client in enumerate(self.list_of_clients):
             address = str(client.address_from_csv)
             geocode_response = self.geocode_address(address)
             if len(geocode_response) == 1:
                 self._sort_response(client, geocode_response[0])
             else:
                 # todo raise error and log
-                print('uh that shouldn\'t have happened' + client.pre_full_address)
-
-    def _sort_response(self, client, response):
-        # todo verify dict has values, log if not
-        client.google_address = response['formatted_address']
-        client.geocode = response['geometry']['location']
+                pass
 
     def geocode_address(self, address):
         try:
             return googlemaps.geocoding.geocode(self.client, address=address)
         except googlemaps.exceptions.ApiError as apie:
             logging.critical(apie)
-            # todo may want to stop application on this type of error
-            return None
+            raise apie
 
-    def client_connection(self):
-        try:
-            self.client = googlemaps.client.Client(key=self.api_key)
-        except ValueError as ve:
-            logging.critical(ve)
-            print(ve)
+    def _sort_response(self, client, response):
+        # todo verify dict has values, log if not
+        client.google_address = response['formatted_address']
+        client.geocode = response['geometry']['location']
 
 
 class Store():
