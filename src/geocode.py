@@ -31,7 +31,7 @@ def main():
     gcs.client_connection()
     gcs.geocode_addresses()
 
-    write_json_to_file(app_settings.output_file, clientele._to_json())
+    write_json_to_file(app_settings.output_file, clientele.to_list_of_dicts())
 
 def build_clientele_from_csv_file(file):
     clientele = None
@@ -85,20 +85,28 @@ class Address:
     zip = None
 
     def __init__(self, info=None):
-        if type(info) is dict or collections.OrderedDict:
+        if type(info) is collections.OrderedDict:
             self._dict_to_address(info)
+
         elif info is not None:
             # todo log error
             raise TypeError
 
     def _dict_to_address(self, info):
+        city = info['city']
+        zip = info['zip']
+
+        if not city and not zip:
+            # todo log error
+            raise ValueError
+
         self.street_address_1 = info['address_1']
         self.street_address_2 = info['address_2']
-        self.city = info['city']
+        self.city = city
         self.state = info['state']
-        self.zip = info['zip']
+        self.zip = zip
 
-    def _to_json(self):
+    def to_dict(self):
         return {
             'street_address_1': self.street_address_1,
             'street_address_2': self.street_address_2,
@@ -187,10 +195,10 @@ class Clientele:
             print(str(e))
             logging.error(e)
 
-    def _to_json(self):
+    def to_list_of_dicts(self):
         clientele_json = []
         for i in self.client_list:
-            clientele_json.append(i._to_json())
+            clientele_json.append(i.to_dict())
         return clientele_json
 
 
@@ -237,7 +245,7 @@ class Store():
     store_name = None
 
     def __init__(self, client_dict=None):
-        if type(client_dict) is dict or type(client_dict) is collections.OrderedDict:
+        if type(client_dict) is collections.OrderedDict:
             self._dict_to_client(client_dict)
         elif client_dict is not None:
             # todo log error
@@ -248,11 +256,11 @@ class Store():
         self.phone_number = client_dict['phone']
         self.address_from_csv = Address(client_dict)
 
-    def _to_json(self):
+    def to_dict(self):
         return {
             'store_name': self.store_name,
             'phone_number': self.phone_number,
-            'address_components': self.address_from_csv._to_json(),
+            'address_components': self.address_from_csv.to_dict(),
             'google_address': self.address_from_google,
             'geocode': self.geocode
         }
