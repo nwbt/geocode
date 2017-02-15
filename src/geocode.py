@@ -11,9 +11,7 @@ import configparser
 import csv
 import collections
 import json
-from googlemaps import client as googleclient
-from googlemaps import geocoding as googlegeocode
-from googlemaps import exceptions
+import googlemaps
 
 CONFIG_FILE = 'config/config.ini'
 
@@ -35,10 +33,27 @@ def main():
 
     write_json_to_file(app_settings.output_file, clientele._to_json())
 
-def write_json_to_file(output_file, json_as_str):
+def build_clientele_from_csv_file(file):
+    clientele = None
+    try:
+        with open(file) as csvfile:
+            clientele = Clientele()
+            dialect = csv.Sniffer().sniff(csvfile.read(1024))
+            csvfile.seek(0)
+            try:
+                reader = csv.DictReader(csvfile, dialect=dialect)
+                logging.debug('opened file: ' + file)
+                for idx, row in enumerate(reader):
+                    logging.debug('row number:' + str(idx + 1) + ', row content:' + str(row))
+                    clientele.add_client(row)
 
-    with open(output_file, 'w') as file:
-        json.dump(json_as_str, file)
+            except IOError as ioe:
+                logging.critical(ioe)
+
+    except FileNotFoundError as fnfe:
+        logging.critical(fnfe)
+
+    return clientele
 
 def parse_config_file():
     config = configparser.ConfigParser()
@@ -56,6 +71,48 @@ def parse_config_file():
     app.verify_settings()
 
     return app
+
+def write_json_to_file(output_file, json_as_str):
+    with open(output_file, 'w') as file:
+        json.dump(json_as_str, file)
+
+
+class Address:
+    street_address_1 = None
+    street_address_2 = None
+    city = None
+    state = None
+    zip = None
+
+    def __init__(self, info=None):
+        if type(info) is dict or collections.OrderedDict:
+            self._dict_to_address(info)
+        elif info is not None:
+            # todo log error
+            raise TypeError
+
+    def _dict_to_address(self, info):
+        self.street_address_1 = info['address_1']
+        self.street_address_2 = info['address_2']
+        self.city = info['city']
+        self.state = info['state']
+        self.zip = info['zip']
+
+    def _to_json(self):
+        return {
+            'street_address_1': self.street_address_1,
+            'street_address_2': self.street_address_2,
+            'city': self.city,
+            'state': self.state,
+            'zip': self.zip
+        }
+
+    def __str__(self):
+        return self.street_address_1 + ' ' \
+               + self.street_address_2 + ' ' \
+               + self.city + ', ' \
+               + self.state + ' ' \
+               + self.zip
 
 
 class ApplicationSettings:
@@ -119,29 +176,6 @@ class ApplicationSettings:
                     pass
 
 
-def build_clientele_from_csv_file(file):
-    clientele = None
-    try:
-        with open(file) as csvfile:
-            clientele = Clientele()
-            dialect = csv.Sniffer().sniff(csvfile.read(1024))
-            csvfile.seek(0)
-            try:
-                reader = csv.DictReader(csvfile, dialect=dialect)
-                logging.debug('opened file: ' + file)
-                for idx, row in enumerate(reader):
-                    logging.debug('row number:' + str(idx + 1) + ', row content:' + str(row))
-                    clientele.add_client(row)
-
-            except IOError as ioe:
-                logging.critical(ioe)
-
-    except FileNotFoundError as fnfe:
-        logging.critical(fnfe)
-
-    return clientele
-
-
 class Clientele:
     client_list = []
 
@@ -160,12 +194,47 @@ class Clientele:
         return clientele_json
 
 
+class GoogleGeocodeService:
+    clients = None
+    api_key = None
+
+    def geocode_addresses(self):
+        for idx, client in enumerate(self.clients):
+            address = str(client.address_from_csv)
+            geocode_response = self.geocode_address(address)
+            if len(geocode_response) == 1:
+                self._sort_response(client, geocode_response[0])
+            else:
+                # todo raise error and log
+                print('uh that shouldn\'t have happened' + client.pre_full_address)
+
+    def _sort_response(self, client, response):
+        # todo verify dict has values, log if not
+        client.google_address = response['formatted_address']
+        client.geocode = response['geometry']['location']
+
+    def geocode_address(self, address):
+        try:
+            return googlemaps.geocoding.geocode(self.client, address=address)
+        except googlemaps.exceptions.ApiError as apie:
+            logging.critical(apie)
+            # todo may want to stop application on this type of error
+            return None
+
+    def client_connection(self):
+        try:
+            self.client = googlemaps.client.Client(key=self.api_key)
+        except ValueError as ve:
+            logging.critical(ve)
+            print(ve)
+
+
 class Store():
-    address_components = None
-    google_address = None
+    address_from_csv = None
+    address_from_google = None
     geocode = None
-    store_name = None
     phone_number = None
+    store_name = None
 
     def __init__(self, client_dict=None):
         if type(client_dict) is dict or type(client_dict) is collections.OrderedDict:
@@ -177,85 +246,16 @@ class Store():
     def _dict_to_client(self, client_dict):
         self.store_name = client_dict['store_name']
         self.phone_number = client_dict['phone']
-        self.address_components = Location(client_dict)
+        self.address_from_csv = Address(client_dict)
 
     def _to_json(self):
         return {
             'store_name': self.store_name,
             'phone_number': self.phone_number,
-            'address_components': self.address_components._to_json(),
-            'google_address': self.google_address,
+            'address_components': self.address_from_csv._to_json(),
+            'google_address': self.address_from_google,
             'geocode': self.geocode
-                }
-
-
-class Location:
-    address_1 = None
-    address_2 = None
-    city = None
-    state = None
-    zip = None
-
-    def __init__(self, info=None):
-        if type(info) is dict or collections.OrderedDict:
-            self._dict_to_address(info)
-        elif info is not None:
-            # todo log error
-            raise TypeError
-
-    def _dict_to_address(self, info):
-        self.address_1 = info['address_1']
-        self.address_2 = info['address_2']
-        self.city = info['city']
-        self.state = info['state']
-        self.zip = info['zip']
-
-    def _to_json(self):
-        return {
-            'address_1': self.address_1,
-            'address_2': self.address_2,
-            'city': self.city,
-            'state': self.state,
-            'zip': self.zip
         }
-
-    def __str__(self):
-        return self.address_1 + ' ' + self.address_2 + ' ' + self.city + ', ' + self.state + ' ' + self.zip
-
-
-class GoogleGeocodeService:
-    clients = None
-    api_key = None
-
-    def geocode_addresses(self):
-        for idx, client in enumerate(self.clients):
-            geocode_response = self.geocode_address(client.pre_full_address)
-            if len(geocode_response) == 1:
-                self._manage_response(client, geocode_response[0])
-            else:
-                # todo raise error and log
-                print('uh that shouldn\'t have happened' + client.pre_full_address)
-
-    def _manage_response(self, client, response):
-        # todo verify dict has values, log if not
-        client.google_address = response['formatted_address']
-        client.geocode = response['geometry']['location']
-
-    def geocode_address(self, pre_full_address):
-        try:
-            value = googlegeocode.geocode(self.client, address=pre_full_address)
-            return value
-        except exceptions.ApiError as apie:
-            logging.critical(apie)
-            # todo may want to stop application on this type of error
-            return None
-
-    def client_connection(self):
-        try:
-            self.client = googleclient.Client(key=self.api_key)
-        except ValueError as ve:
-            logging.critical(ve)
-            print(ve)
 
 
 if __name__ == '__main__':
