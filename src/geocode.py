@@ -32,23 +32,33 @@ def main():
 
 def build_clientele_from_csv_file(file):
     clientele = None
+
     try:
-        with open(file) as csvfile:
+        with open(file, encoding='latin-1') as csvfile:
+            dialect = None
             clientele = Clientele()
-            dialect = csv.Sniffer().sniff(csvfile.read(1024))
-            csvfile.seek(0)
+
             try:
-                reader = csv.DictReader(csvfile, dialect=dialect)
-                logging.debug('opened file: ' + file)
-                for idx, row in enumerate(reader):
-                    logging.debug('row number:' + str(idx + 1) + ', row content:' + str(row))
-                    clientele.add_client(row)
+                dialect = csv.Sniffer().sniff(csvfile.read(1024))
+                csvfile.seek(0)
 
-            except IOError as ioe:
-                logging.critical(ioe)
+                try:
+                    if not dialect:
+                        dialect = 'excel'
+                    reader = csv.DictReader(csvfile, dialect=dialect)
+                    logging.debug('opened file: ' + file)
+                    for idx, row in enumerate(reader):
+                        logging.debug('row number:' + str(idx + 1) + ', row content:' + str(row))
+                        clientele.add_client(row)
 
-    except FileNotFoundError as fnfe:
-        logging.critical(fnfe)
+                except IOError as ex:
+                    logging.critical(ex)
+
+            except UnicodeDecodeError as ex:
+                logging.critical(ex)
+
+    except FileNotFoundError as ex:
+        logging.critical(ex)
 
     return clientele
 
@@ -201,18 +211,18 @@ class Clientele:
 
 class GoogleGeocodeService:
 
-    def __init__(self, api_key=None, client_list=None):
+    def __init__(self, api_key=None, store_list=None):
         if api_key:
             self.api_key = api_key
-        if client_list:
-            self.list_of_clients = client_list
+        if store_list:
+            self.list_of_clients = store_list
 
     @property
-    def client(self):
+    def google_client(self):
         return self._client
 
-    @client.setter
-    def client(self, client):
+    @google_client.setter
+    def google_client(self, client):
         if type(client) is googlemaps.client.Client:
             self._client = client
         else:
@@ -225,29 +235,35 @@ class GoogleGeocodeService:
     @api_key.setter
     def api_key(self, api_key):
         self._api_key = api_key
-        self.client = googlemaps.client.Client(key=api_key)
+        self.google_client = googlemaps.client.Client(key=api_key)
 
     def geocode_addresses(self):
-        for idx, client in enumerate(self.list_of_clients):
-            address = str(client.address_from_csv)
+        for idx, store in enumerate(self.list_of_clients):
+            address = str(store.address_from_csv)
             geocode_response = self.geocode_address(address)
-            if len(geocode_response) == 1:
-                self._sort_response(client, geocode_response[0])
+            response_length = len(geocode_response)
+            if response_length < 1:
+                logging.error('response empty, address=' + str(store.address_from_csv))
+            elif response_length == 1:
+                self._sort_response(store, geocode_response[0])
             else:
-                # todo raise error and log
-                pass
+                logging.warning('ambiguous request, multiple responses, address:' + str(store.address_from_csv))
+                for i in geocode_response:
+                    logging.warning(str(i))
 
     def geocode_address(self, address):
         try:
-            return googlemaps.geocoding.geocode(self.client, address=address)
-        except googlemaps.exceptions.ApiError as apie:
-            logging.critical(apie)
-            raise apie
+            return googlemaps.geocoding.geocode(self.google_client, address=address)
+        except googlemaps.exceptions.TransportError as ex:
+            logging.error(ex)
+        except googlemaps.exceptions.ApiError as ex:
+            logging.critical(ex)
+            raise ex
 
-    def _sort_response(self, client, response):
+    def _sort_response(self, store, response):
         # todo verify dict has values, log if not
-        client.google_address = response['formatted_address']
-        client.geocode = response['geometry']['location']
+        store.address_from_google = response['formatted_address']
+        store.geocode = response['geometry']['location']
 
 
 class Store():
