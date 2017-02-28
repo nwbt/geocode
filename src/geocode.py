@@ -11,7 +11,7 @@ import configparser
 import csv
 import collections
 import json
-import googlemaps
+import geocode_service
 
 CONFIG_FILE = 'config/config.ini'
 
@@ -24,7 +24,7 @@ def main():
     app_settings = parse_config_file()
     clientele = build_clientele_from_csv_file(app_settings.input_file)
 
-    gcs = GoogleGeocodeService(app_settings.api_key, clientele.client_list)
+    gcs = geocode_service.GoogleGeocodeService(app_settings.api_key, clientele.client_list)
 
     gcs.geocode_addresses()
 
@@ -209,91 +209,36 @@ class Clientele:
         return clientele_json
 
 
-class GoogleGeocodeService:
-
-    def __init__(self, api_key=None, store_list=None):
-        if api_key:
-            self.api_key = api_key
-        if store_list:
-            self.list_of_clients = store_list
-
-    @property
-    def google_client(self):
-        return self._client
-
-    @google_client.setter
-    def google_client(self, client):
-        if type(client) is googlemaps.client.Client:
-            self._client = client
-        else:
-            raise TypeError
-
-    @property
-    def api_key(self):
-        return self._api_key
-
-    @api_key.setter
-    def api_key(self, api_key):
-        self._api_key = api_key
-        self.google_client = googlemaps.client.Client(key=api_key)
-
-    def geocode_addresses(self):
-        for idx, store in enumerate(self.list_of_clients):
-            address = str(store.address_from_csv)
-            geocode_response = self.geocode_address(address)
-            response_length = len(geocode_response)
-            if response_length < 1:
-                logging.error('response empty, address=' + str(store.address_from_csv))
-            elif response_length == 1:
-                self._sort_response(store, geocode_response[0])
-            else:
-                logging.warning('ambiguous request, multiple responses, address:' + str(store.address_from_csv))
-                for i in geocode_response:
-                    logging.warning(str(i))
-
-    def geocode_address(self, address):
-        try:
-            return googlemaps.geocoding.geocode(self.google_client, address=address)
-        except googlemaps.exceptions.TransportError as ex:
-            logging.error(ex)
-        except googlemaps.exceptions.ApiError as ex:
-            logging.critical(ex)
-            raise ex
-
-    def _sort_response(self, store, response):
-        # todo verify dict has values, log if not
-        store.address_from_google = response['formatted_address']
-        store.geocode = response['geometry']['location']
-
-
 class Store():
-    address_from_csv = None
-    address_from_google = None
-    geocode = None
-    phone_number = None
+    csv_address = None
+    google_address = None
+    google_geocode = None
+    csv_phone = None
     store_name = None
+    place_id = None
 
     def __init__(self, client_dict=None):
         if type(client_dict) is collections.OrderedDict:
             self._dict_to_store(client_dict)
         elif client_dict is None:
-            self.address_from_csv = Address()
+            self.csv_address = Address()
         else:
             # todo log error
             raise TypeError
 
     def _dict_to_store(self, client_dict):
         self.store_name = client_dict['store_name']
-        self.phone_number = client_dict['phone']
-        self.address_from_csv = Address(client_dict)
+        self.csv_phone = client_dict['phone']
+        self.csv_address = Address(client_dict)
 
     def to_dict(self):
         return {
             'store_name': self.store_name,
-            'phone_number': self.phone_number,
-            'address_components': self.address_from_csv.to_dict(),
-            'google_address': self.address_from_google,
-            'geocode': self.geocode
+            'phone_number': self.csv_phone,
+            'address_components': self.csv_address.to_dict(),
+            'google_address': self.google_address,
+            'geocode': self.google_geocode,
+            'place_id' : self.place_id
         }
 
 
