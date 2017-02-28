@@ -211,11 +211,12 @@ class Clientele:
 
 class Store():
     csv_address = None
+    csv_phone = None
+    csv_name = None
+    google_name= None
     google_address = None
     google_geocode = None
-    csv_phone = None
-    store_name = None
-    place_id = None
+    google_placeid = None
 
     def __init__(self, client_dict=None):
         if type(client_dict) is collections.OrderedDict:
@@ -227,18 +228,19 @@ class Store():
             raise TypeError
 
     def _dict_to_store(self, client_dict):
-        self.store_name = client_dict['store_name']
+        self.csv_name = client_dict['store_name']
         self.csv_phone = client_dict['phone']
         self.csv_address = Address(client_dict)
 
     def to_dict(self):
         return {
-            'store_name': self.store_name,
-            'phone_number': self.csv_phone,
-            'address_components': self.csv_address.to_dict(),
+            'csv_address': self.csv_address.to_dict(),
+            'csv_name': self.csv_name,
+            'csv_phone': self.csv_phone,
             'google_address': self.google_address,
-            'geocode': self.google_geocode,
-            'place_id' : self.place_id
+            'google_geocode': self.google_geocode,
+            'google_name': self.google_name,
+            'google_placeid' : self.google_placeid
         }
 
 
