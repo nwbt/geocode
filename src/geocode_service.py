@@ -8,6 +8,7 @@
 # Distributed under terms of the MIT license.
 import googlemaps.places
 import googlemaps.client
+import googlemaps.geocoding
 import logging
 
 
@@ -15,6 +16,7 @@ class GeocodeService:
 
     def __init__(self):
         pass
+
 
 class GoogleGeocodeService(GeocodeService):
 
@@ -47,65 +49,69 @@ class GoogleGeocodeService(GeocodeService):
         self.google_client = googlemaps.client.Client(key=api_key)
 
     def geocode_addresses(self):
-        status = 'status'
-        results = 'results'
         for idx, store in enumerate(self.list_of_clients):
             try:
                 query = store.csv_name + ' ' + str(store.csv_address)
                 response = self._get_place(query)
+                logging.debug('response: ' + str(response))
 
-                if response and response[status] == 'OK':
-                    print('response status OK')
-                    if len(response[results]) == 1:
-                        print(str(response[results][0]))
-                        print(query)
-                        self._handle_place_response(response[results][0], store)
-                    elif len(response[results]) > 1:
-                        print(query)
-                        for index, result in enumerate(response[results]):
-                            print(str(index+1) + ') ' + str(result))
-                        selected = input("Select index of desired response (use 0 for none):")
-                        try:
-                            selected = int(selected)
-                            selected = selected - 1
-                            if selected < 0:
-                                # todo log info
-                                pass
-                            elif selected >= len(response[results]):
-                                # todo log error and
-                                # todo retry once then skip
-                                pass
-                            else:
-                                self._handle_place_response(response[results][selected], store)
-                        except ValueError as ex:
-                            # todo log error and
-                            # todo retry once then skip
-                            print(ex)
+                if response and response['status'] == 'OK':
+                    logging.info('response status OK')
 
-                elif response and response['status'] == 'ZERO_RESULTS':
-                    print('response status ZERO_RESULTS')
-                elif not response:
-                    print('response empty')
+                    results = response['results']
+                    results_length = len(results)
+
+                    if results_length == 1:
+                        logging.debug(str(results[0]))
+                        logging.info('csv_name + csv_address:\t\t ' + query)
+                        logging.info('google_name + google_address:\t ' + results[0]['name'] + ' '+ results[0]['formatted_address'])
+                        self._handle_place_response(results[0], store)
+
+                    elif results_length > 1:
+                        logging.info('ambiguous response')
+                        logging.info('csv_name + csv_address: ' + query)
+
+                        # TODO do for loop below functionally and conditionally
+                        print('csv_name + csv_address: ' + query)
+                        print('google_name + google_addresses: ')
+                        for index, result in enumerate(results): # TODO display to console
+                            print('\t' + str(index+1) + ') ' + str(result))
+                            logging.info(str(index + 1) + 'google_address: ' + str(result))
+
+                        idx_selected = self._handle_ambiguous_results(results_length)
+
+                        if idx_selected >= 0 and idx_selected < results_length:
+                            logging.info('csv_name + csv_address:\t\t ' + query)
+                            logging.info('google_name + google_address:\t ' + results[idx_selected]['name'] + ' '+ results[idx_selected]['formatted_address'])
+                            self._handle_place_response(results[idx_selected], store)
+                        else:
+                            # TODO determine which line in CSV file is not place-able
+                            logging.warning('no result selected for address: ' + str(query))
+
+                    else:
+                        logging.error('response with status OK should have results larger than zero')
+
+                elif not response or response['status'] == 'ZERO_RESULTS':
+                    logging.warning('empty response - no match for address: ' + query)
+
                 else:
-                    print('unknown response')
+                    logging.error('response unknown')
 
-                # self._handle_place_response(response, store)
+            except Exception as ex:
+                logging.error('exception unknown in geocode_addresses' + str(ex))
 
+    def _handle_ambiguous_results(self, results_length):
+        while True:
+            selected = input("Select index of desired response (use 0 for none): ")
+            try:
+                selected = int(selected)
+                selected = selected - 1
+                if selected >= results_length:
+                    logging.warning('selected result ' + str(selected) + 'outside array\'s bounds')
+                else:
+                    return selected
             except ValueError as ex:
-                print(ex)
-
-            # query = str(store.address_from_csv)
-            # geocode_response = self._get_geocode(query)
-            # response_length = len(geocode_response)
-            # if response_length < 1:
-            #     logging.error('response empty, address=' + str(store.address_from_csv))
-            # elif response_length == 1:
-            #     self._sort_response(store, geocode_response[0])
-            # else:
-            #     logging.warning('ambiguous request, multiple responses, address:' + str(store.address_from_csv))
-            #     for i in geocode_response:
-            #         logging.warning(str(i))
-        # todo look for duplicates and filter and map these results functionally
+                logging.warning(ex)
 
     def _get_geocode(self, address):
         try:
@@ -129,12 +135,14 @@ class GoogleGeocodeService(GeocodeService):
             logging.critical(ex)
             raise ex
 
+    def _get_place_details(self, placeid):
+        pass # TODO implement
+
     def _handle_place_response(self, result, store):
         store.google_address = result['formatted_address']
         store.google_name    = result['name']
         store.google_geocode = result['geometry']['location']
         store.google_placeid = result['id']
-
 
     def _sort_response(self, store, response):
         # todo verify dict has values, log if not
