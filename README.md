@@ -16,3 +16,8 @@ it's important that the header row (first row in the csv file) only contains the
 
 ## TODO
 
+- Ensure api key is different from Javascript mapping API.
+- Note which lines in CSV file do not correlate to a place in Google
+- Create file with addresses missing stores
+- Appending JSON if run with subset of stores (after addresses are fixed)
+
