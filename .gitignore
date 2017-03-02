@@ -1,3 +1,6 @@
 .idea/
 coverage-reports/
 resources/
+.pyc
+.DS_Store
+__pycache__/

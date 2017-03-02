@@ -72,11 +72,11 @@ class GoogleGeocodeService(GeocodeService):
                         logging.info('csv_name + csv_address: ' + query)
 
                         # TODO do for loop below functionally and conditionally
-                        print('csv_name + csv_address: ' + query)
-                        print('google_name + google_addresses: ')
+                        print('\ncsv_name + csv_address:\n\t1) ' + str(store.csv_name) + ' | ' + str(store.csv_address))
+                        print('\ngoogle_name + google_addresses: ')
                         for index, result in enumerate(results): # TODO display to console
-                            print('\t' + str(index+1) + ') ' + str(result))
-                            logging.info(str(index + 1) + 'google_address: ' + str(result))
+                            print('\t' + str(index+1) + ') ' + results[index]['name'] + ' | ' + results[index]['formatted_address'])
+                            logging.info(str(index+1) + ') google_address: ' + str(result))
 
                         idx_selected = self._handle_ambiguous_results(results_length)
 
@@ -139,6 +139,10 @@ class GoogleGeocodeService(GeocodeService):
         pass # TODO implement
 
     def _handle_place_response(self, result, store):
+        if 'permanently_closed' in result and result['permanently_closed'] is True:
+            logging.warning('Location reported closed: ' + str(store.csv_address) + ' | ' + str(result))
+            return
+
         store.google_address = result['formatted_address']
         store.google_name    = result['name']
         store.google_geocode = result['geometry']['location']
