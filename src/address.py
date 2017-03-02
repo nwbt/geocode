@@ -39,6 +39,7 @@ class Address:
         self.city = l_city
         self.zip = l_zip
 
+    # todo remove
     def to_dict(self):
         return {
             'street_address_1': self.street_address_1,
@@ -51,8 +52,8 @@ class Address:
     def __str__(self):
         # todo cleanup
         address =  self.street_address_1 if self.street_address_1 is not None else ''
-        address += self.street_address_2 if self.street_address_2 is not None else ''
-        address += self.city if self.city is not None else ''
-        address += self.state if self.state is not None else ''
-        address += self.zip if self.zip is not None else ''
+        address += ' ' + self.street_address_2 if self.street_address_2 is not None else ''
+        address += ' ' + self.city if self.city is not None else ''
+        address += ' ' + self.state if self.state is not None else ''
+        address += ' ' + self.zip if self.zip is not None else ''
         return address

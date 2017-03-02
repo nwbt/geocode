@@ -17,10 +17,16 @@ class Store:
         self.csv_address = None
         self.csv_phone = None
         self.csv_name = None
-        self.google_name = None
-        self.google_address = None
-        self.google_geocode = None
-        self.google_placeid = None
+
+        # value from google place api
+        self.name = None
+        self.formatted_address = None
+        self.location = None
+        self.place_id = None
+        self.formatted_phone_number = None
+        self.adr_address = None
+        self.url = None
+        self.website = None
 
         if type(store_dict) is collections.OrderedDict:
             self._dict_to_store(store_dict)
@@ -37,13 +43,14 @@ class Store:
 
     def to_dict(self):
         return {
-            'csv_address': self.csv_address.to_dict(),
-            'csv_name': self.csv_name,
-            'csv_phone': self.csv_phone,
-            'google_address': self.google_address,
-            'google_geocode': self.google_geocode,
-            'google_name': self.google_name,
-            'google_placeid': self.google_placeid
+            'name': self.name,
+            'formatted_address': self.formatted_address,
+            'adr_address': self.adr_address,
+            'location': self.location,
+            'url': self.url,
+            'website': self.website,
+            'formatted_phone_number': self.formatted_phone_number,
+            # 'place_id': self.place_id
         }
 
     def __lt__(self, other):
@@ -51,11 +58,11 @@ class Store:
             logging.error('comparison not possible b/c other not of type Store')
             raise TypeError
 
-        return self.google_placeid < other.google_placeid
+        return self.place_id < other.google_placeid
 
     def __eq__(self, other):
         if type(other) is not Store:
             logging.error('comparison not possible b/c other not of type Store')
             raise TypeError
 
-        return self.google_placeid == other.google_placeid
+        return self.place_id == other.google_placeid

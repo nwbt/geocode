@@ -21,8 +21,7 @@ def main():
     app_settings = parse_config_file()
     clientele = build_clientele_from_csv_file(app_settings.input_file)
     gcs = GoogleGeocodeService(app_settings.api_key, clientele.client_list)
-    gcs.geocode_addresses()
-    clientele.eliminate_duplicates()
+    clientele.client_list = gcs.geocode_addresses()
     write_json_to_file(app_settings.output_file, clientele.to_list_of_dicts())
 
 def build_clientele_from_csv_file(file):
