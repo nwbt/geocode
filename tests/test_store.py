@@ -56,9 +56,9 @@ class ClassStoreTest(unittest.TestCase):
         address = Address(ordered_store_dict)
 
         # assert
-        self.assertEqual(store.store_name, self.store_dict['store_name'], 'store name strings are not equal')
-        self.assertEqual(store.phone_number, self.store_dict['phone'], 'phone number are not equal')
-        self.assertEqual(str(store.address_from_csv), str(address), 'addresses are not the same')
+        self.assertEqual(store.csv_name, self.store_dict['store_name'], 'store name strings are not equal')
+        self.assertEqual(store.csv_phone, self.store_dict['phone'], 'phone number are not equal')
+        self.assertEqual(str(store.csv_address), str(address), 'addresses are not the same')
 
     def test_plain_dict_raises_type_error(self):
         # arrange
@@ -86,7 +86,7 @@ class ClassStoreTest(unittest.TestCase):
 
         # act
         store = Store(ordered_store_dict)
-        store.address_from_csv = Address()
+        store.csv_address = Address()
         actual_store_dict = store.to_dict()
 
         # asset

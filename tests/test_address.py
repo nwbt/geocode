@@ -8,7 +8,7 @@
 import collections
 import unittest
 
-from src.geocode import Address
+from src.address import Address
 
 
 def setUpModule():
@@ -177,4 +177,10 @@ class ClassAddressTest(unittest.TestCase):
         # assert
         self.assertEqual(actual_address_dict, expected_address_dict, 'empty dicts not the same')
 
+    def test__str__method(self):
+        address = Address()
+
+        address_str = str(address)
+
+        print(address_str)
 
