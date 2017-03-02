@@ -14,6 +14,10 @@ it's important that the header row (first row in the csv file) only contains the
 6. `zip`
 7. `phone`
 
+The first line should be as follows:
+
+`store_name, address_1, address_2, city, state, zip, phone`
+
 ## TODO
 
 - Ensure api key is different from Javascript mapping API.
