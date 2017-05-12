@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python4
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 # 
@@ -188,6 +188,7 @@ class GoogleGeocodeService(GeocodeService):
         store.website = result.get('website', None)
         store.adr_address = result.get('adr_address', None)
         store.formatted_phone_number = result.get('formatted_phone_number', None)
+        store.city = self._extract_city(result.get('address_components', None))
 
     def _handle_places_result(self, result, store):
         store.formatted_address = result.get('formatted_address', None)
@@ -195,3 +196,35 @@ class GoogleGeocodeService(GeocodeService):
         store.location = result.get('geometry', None).get('location', None)
         store.place_id = result.get('place_id')
 
+    def _extract_city(self, components):
+        if None:
+            return None
+
+        locality_subset = {
+            'locality',
+            'political'
+        }
+
+        locality = list(
+            filter(
+                lambda x: locality_subset.issubset(set(x.get('types'))),
+                components
+            )
+        )
+
+        if len(locality) == 1:
+            return locality[0].get('long_name', None)
+
+        sublocality_subset = {
+            'sublocality',
+            'political'
+        }
+
+        sublocality = list(
+            filter(
+                lambda x: sublocality_subset.issubset(set(x.get('types'))),
+                components
+            )
+        )
+
+        return sublocality[0].get('long_name', None) if len(sublocality) == 1 else None

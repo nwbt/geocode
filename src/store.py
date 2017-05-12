@@ -27,6 +27,7 @@ class Store:
         self.adr_address = None
         self.url = None
         self.website = None
+        self.city = None
 
         if type(store_dict) is collections.OrderedDict:
             self._dict_to_store(store_dict)
@@ -50,6 +51,7 @@ class Store:
             'url': self.url,
             'website': self.website,
             'formatted_phone_number': self.formatted_phone_number,
+            'city': self.city,
             # 'place_id': self.place_id
         }
 
