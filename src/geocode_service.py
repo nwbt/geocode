@@ -1,4 +1,4 @@
-#! /usr/bin/env python4
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 # 
