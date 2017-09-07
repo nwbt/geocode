@@ -7,3 +7,6 @@ __pycache__/
 dist/
 *.egg-info/
 config/config.ini
+logs/
+input/
+output/
